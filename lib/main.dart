@@ -36,15 +36,10 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
   ui.Image? image;
 
   void _incrementCounter() {
-    // _inferSingleAdd();
-    _inferMosaic9();
-    setState(() {
-      _counter++;
-    });
+    _checkRealOrFake();
   }
 
   @override
@@ -58,7 +53,7 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Image.asset('assets/bluetit.jpg'),
+            Image.asset('assets/fake_1.jpg'),
             RawImage(
               image: image,
             )
@@ -94,35 +89,39 @@ class _MyHomePageState extends State<MyHomePage> {
     print(c[0] ?? "none");
   }
 
-  void _inferMosaic9() async {
+  void _checkRealOrFake() async {
     OrtEnv.instance.init();
     final sessionOptions = OrtSessionOptions();
-    // You can also try pointilism-9.ort and rain-princess.ort
-    final rawAssetFile = await rootBundle.load("assets/models/mosaic-9.ort");
+
+    final rawAssetFile = await rootBundle.load("assets/models/anti-spoof-mn3.onnx");
     final bytes = rawAssetFile.buffer.asUint8List();
     final session = OrtSession.fromBuffer(bytes, sessionOptions);
     final runOptions = OrtRunOptions();
 
-    // You can also try red.png, redgreen.png, redgreenblueblack.png for easy debug
-    ByteData blissBytes = await rootBundle.load('assets/bluetit.jpg');
+    ByteData blissBytes = await rootBundle.load('assets/fake_1.jpg');
     final image = await decodeImageFromList(Uint8List.sublistView(blissBytes));
     final rgbFloats = await imageToFloatTensor(image);
-    final inputOrt = OrtValueTensor.createTensorWithDataList(Float32List.fromList(rgbFloats), [1, 3, 224, 224]);
+    final inputOrt = OrtValueTensor.createTensorWithDataList(Float32List.fromList(rgbFloats), [1, 3, 128, 128]);
 
-    final inputs = {'input1':inputOrt};
+    final inputs = {'actual_input_1':inputOrt};
     final outputs = session.run(runOptions, inputs);
     inputOrt.release();
     runOptions.release();
     sessionOptions.release();
-    // session.release();
+
     OrtEnv.instance.release();
     List outFloats = outputs[0]?.value as List;
-    print(outFloats[0] ?? "none");
 
-    final result = await floatTensorToImage(outFloats);
-    setState(() {
-      this.image = result;
-    });
+    print(outFloats[0]);
+
+    outputs[0]?.release();
+
+    session.release();
+
+    // final result = await floatTensorToImage(outFloats);
+    // setState(() {
+    //   this.image = result;
+    // });
   }
 
   Future<List<double>> imageToFloatTensor(ui.Image image) async {
