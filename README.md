@@ -1,1 +1,1 @@
-# onnx model with live fake detection model
+# onnx model with live/fake face detection model
